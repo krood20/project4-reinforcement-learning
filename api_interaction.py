@@ -1,6 +1,7 @@
 import http.client
 import mimetypes
 from codecs import encode
+import json
 
 
 def locate_me():
@@ -57,8 +58,6 @@ def enter_world(world_num):
     headers = {
         'x-api-key': '9398bf5f4533fbabb0af',
         'userId': '1042',
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'Cookie': 'PHPSESSID=02be66b83f429101b2b740de970cfcc2; qa_key=pk7kcvbr5vlyiho3sgfq2vk5mk09pl2w',
         'Content-type': 'multipart/form-data; boundary={}'.format(boundary)
     }
     conn.request("POST", "/aip2pgaming/api/rl/gw.php", payload, headers)
@@ -107,11 +106,9 @@ def make_move(move, world_num):
     body = b'\r\n'.join(dataList)
     payload = body
     headers = {
-        'x-api-key': '9398bf5f4533fbabb0af',
-        'userId': '1042',
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'Cookie': 'PHPSESSID=02be66b83f429101b2b740de970cfcc2; qa_key=pk7kcvbr5vlyiho3sgfq2vk5mk09pl2w',
-        'Content-type': 'multipart/form-data; boundary={}'.format(boundary)
+      'x-api-key': '9398bf5f4533fbabb0af',
+      'userId': '1042',
+      'Content-type': 'multipart/form-data; boundary={}'.format(boundary)
     }
     conn.request("POST", "/aip2pgaming/api/rl/gw.php", payload, headers)
     res = conn.getresponse()
@@ -155,12 +152,12 @@ def get_last_x_moves(x):
 
 
 #example usage
-# world_num = "0"
-# move = "N"
-# x = "10"
+world_num = "0"
+move = "N"
+x = "10"
 
-# enter_world(world_num)
-# make_move(move, world_num)
+enter_world(world_num)
+make_move(move, world_num)
 # locate_me()
 # get_score()
 # get_last_x_moves(x)
