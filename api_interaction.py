@@ -152,12 +152,12 @@ def get_last_x_moves(x):
 
 
 #example usage
-world_num = "0"
-move = "N"
-x = "10"
+# world_num = "0"
+# move = "N"
+# x = "10"
 
-enter_world(world_num)
-make_move(move, world_num)
+# enter_world(world_num)
+# make_move(move, world_num)
 # locate_me()
 # get_score()
 # get_last_x_moves(x)
