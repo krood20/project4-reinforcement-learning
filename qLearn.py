@@ -12,20 +12,35 @@ import numpy as np
 import pickle
 import time 
 import random
-import math as m
+import math
 
 
-world = '2'
-# api.enter_world(world)
-def qLearningAgent(previousState, previousReward, previousAction, currentState, currentReward):
+world = '5'
+api.enter_world(world)
+
+def checkUnexpectedMovement(previousState, previousAction, currentState):
+    if previousAction == 0:
+        if(previousState[1] + 1 == currentState[1] and previousState[1]!= 39):
+            return False
+    elif previousAction == 1:
+        if(previousState[0] + 1 == currentState[0] and previousState[0]!= 39):
+            return False
+    elif previousAction == 2:
+        if(previousState[1] - 1 == currentState[1] and previousState[1]!= 0):
+            return False
+    elif previousAction == 3:
+        if(previousState[0] - 1 == currentState[0] and previousState[0]!= 0):
+            return False
+    return True
+def qLearningAgent(previousState, previousReward, previousAction, currentState, currentReward, epsilon):
     
     # Percept - the agents perceptual inputs at any given instant
     # Persistent - Global variables that outlive a single function call
     # qTable = pickle.load(open('qTable0.pkl', 'rb'))
     
     # Set learning rate (alpha)
-    gamma = 0.7
-    alpha = 0.7
+    gamma = 0.5
+    alpha = 0.8
     
     # Terminal Condition
     if currentState is None:
@@ -33,48 +48,85 @@ def qLearningAgent(previousState, previousReward, previousAction, currentState, 
         # print('Dumping Q table to pickle file.')
         pickle.dump(qTable, open('qTable'+world+'.pkl', 'wb'))
         # print('Dump completed successfully.')
-        return None, None
-    
+        return None
     
     # print('Updating Q table')
     
-    qTable[previousState[0]][previousState[1]][previousAction] = (qTable[previousState[0]][previousState[1]][previousAction]
-       + alpha*(currentReward + gamma*np.max(qTable[currentState[0]][currentState[1]][:]) 
-       - qTable[previousState[0]][previousState[1]][previousAction]))
+    # qTable[previousState[0]][previousState[1]][previousAction] = (qTable[previousState[0]][previousState[1]][previousAction]
+    #    + alpha*(currentReward + gamma*np.max(qTable[currentState[0]][currentState[1]][:]) 
+    #    - qTable[previousState[0]][previousState[1]][previousAction]))
     
     # Q(s,a) <- (1-alpha)*Q(s,a) + alpha*(r + gamma*maxQ(s',a'))
-    
-    # qTable[previousState[0]][previousState[1]][previousAction] = ((1-alpha)*qTable[previousState[0]][previousState[1]][previousAction]
-    #     + alpha*(previousReward + gamma*np.max(qTable[currentState[0]][currentState[1]][:])))
+
+    qTable[previousState[0]][previousState[1]][previousAction] = ((1-alpha)*qTable[previousState[0]][previousState[1]][previousAction]
+        + alpha*(currentReward + gamma*np.max(qTable[currentState[0]][currentState[1]][:])))
     
     # print('Dumping Q table to pickle file.')
     pickle.dump(qTable, open('qTable'+world+'.pkl', 'wb'))
     # print('Dump completed successfully.')
-        
-    nextAction = np.argmax(qTable[currentState[0]][currentState[1]][:])
-    return nextAction , qTable[currentState[0]][currentState[1]][:]
-   
 
-def selectMove(previousAction, epsilon, currentRewards):
-    
     r = random.uniform(0, 1)
-  
-    newSquare = False
-    #print('Moving agent.')
-    time.sleep(5)
-    if(r < epsilon):
+    
+    if( r < epsilon):
         # explore pick random more and explore instead
-        choices = range(0, 4)
-        if( currentRewards is not None):
-            newChoices = []
-            for i in choices:
-                if(currentRewards[i] == 0):
-                    newChoices.append(i)
-            if(len(newChoices) >= 1):                
-                newSquare = True
-                choices = newChoices
-        previousAction = random.choice(choices)
 
+        # to un visted square
+        choices = []
+        
+        if(currentState[0] != 0):
+            val = np.amax(qTable[currentState[0] - 1][currentState[1]][:])
+            if(val == 0):
+                choices.append(3)
+        if(currentState[0] != 39):
+            val = np.amax(qTable[currentState[0] + 1][currentState[1]][:])
+            if(val == 0):
+                choices.append(1)
+        if(currentState[1] != 39):
+            val = np.amax(qTable[currentState[0] ][currentState[1]+1][:])
+            if(val == 0):
+                choices.append(0)
+        if(currentState[1] != 0):
+            val = np.amax(qTable[currentState[0] ][currentState[1]-1][:])
+            if(val == 0):
+                choices.append(2)
+
+        return random.choice(choices)
+        # if none go to unvisted direction
+        
+        choices = range(0, 4)
+        validChoices =[]
+        newChoices =[]
+        for i in choices:
+            if( qTable[currentState[0]][currentState[1]][i] == 0 ):
+                newChoices.append(i)
+            if( len(newChoices) >= 1):
+                return random.choice(newChoices)
+            if( qTable[currentState[0]][currentState[1]][i] != -math.inf ):
+                validChoices.append(i)
+        return random.choice(validChoices)
+
+    nextAction = np.argmax(qTable[currentState[0]][currentState[1]][:])
+    return nextAction 
+   
+def backFillReward(currentState, currentReward):
+    gamma = 0.9
+    alpha = 0.9
+    for i in range(0 , 4):
+        qTable[currentState[0]][currentState[1]][i] = currentReward
+    for i in range(0, currentState[0] - 1):
+        qTable[currentState[0]-i-1][currentState[1]][1] = (1-alpha)*qTable[currentState[0]-i-1][currentState[1]][1] + alpha*( gamma*np.max(qTable[currentState[0] - i][currentState[1]][:]))
+    for i in range(currentState[0], 38):
+        qTable[i+1][currentState[1]][3] = (1-alpha)*qTable[i+1][currentState[1]][3] + alpha*( gamma*np.max(qTable[i][currentState[1]][:]))
+    for i in range(0, currentState[1]-1):
+        qTable[currentState[0]][currentState[1]-i-1][2] = (1-alpha)*qTable[currentState[0]][currentState[1]-i-1][1] + alpha*( gamma*np.max(qTable[currentState[0]][currentState[1]-i][:]))
+    for i in range(currentState[1], 38):
+        qTable[currentState[0]][i+1][0] = (1-alpha)*qTable[currentState[0]][i+1][0] + alpha*( gamma*np.max(qTable[currentState[0]][i][:]))
+
+def selectMove(previousAction):
+    
+  
+     
+    #print('Moving agent.')
     if previousAction == 0:
         direction = 'North'
         nextState = api.make_move('N', world)
@@ -92,6 +144,7 @@ def selectMove(previousAction, epsilon, currentRewards):
     state = json.loads(nextState.decode())
     print(state)
     if state['newState'] != None:
+        #have to check for unpexted movement
         stateX = int(state['newState']['x'])
         stateY = int(state['newState']['y'])
         reward = state['reward']
@@ -100,23 +153,33 @@ def selectMove(previousAction, epsilon, currentRewards):
     
     else:
         print('Fell into exit State.')
+        # need to progate out
         currentState = state['newState']
         reward = state['reward']
         currentReward = reward
     
-    return (currentState, currentReward, newSquare)
+    return currentState, currentReward 
 
 if __name__ == "__main__":
     
     try:
         print('Checking for pickle file')
         qTable = pickle.load(open('qTable'+world+'.pkl', 'rb'))
+        pickle.dump(qTable, open('qTable'+world+'.pkl', 'wb'))
+        
         print('Pickle file found.')
     except (OSError, IOError, EOFError) as e:
         print('No pickle file found. Creating now.')
         # Initialize Q-Values -> 3-dimensional array with x,y coordinates and action
         qTable = np.array(np.zeros([40,40,4]))
-        
+        for item in qTable[:,0]:
+            item[2] = -math.inf
+        for item in qTable[:,39]:
+            item[0] = -math.inf
+        for item in qTable[0,:]:
+            item[3] = -math.inf
+        for item in qTable[39, :]:
+            item[1] = -math.inf
         pickle.dump(qTable, open('qTable'+world+'.pkl', 'wb'))
         print('File created successfully.')
     
@@ -144,8 +207,8 @@ if __name__ == "__main__":
         # By default lets pick a random action at first to get a history of
         # actions in this program instance.
         print('Moving agent.')
-        previousAction = 0
-        (currentState, currentReward, newSquare) = selectMove(previousAction,1, None)
+        previousAction =  random.choice(range(0,4))
+        currentState , currentReward = selectMove(previousAction)
         
         
         explore = True
@@ -153,28 +216,47 @@ if __name__ == "__main__":
         lastMove =  api.get_last_x_moves("1")
         lastMove = json.loads(lastMove.decode())
         exploreCount = 0
-        interationCount = 100
-        while exploreCount < 5:
+        interationCount = 0.0
+        moves = 0
+        while exploreCount < 10:
             # Determine the next action
             # print('Determining next action.')
-            action, currentRewards = qLearningAgent(previousState, previousReward, previousAction, currentState, currentReward)
-            
-            epsilon = 1 / (1 + m.exp( (interationCount - 3000) / 800) )
-            print(epsilon, interationCount)
+            epsilon = ( (8 - exploreCount) / 8 ) * .9
+            if moves < 1600 :
+                epsilon += .1
+            action = qLearningAgent(previousState, previousReward, previousAction, currentState, currentReward, epsilon)
+            moves += 1 
+            print(epsilon)
             if action is not None:
                 # Update the variable values
                 previousState = currentState
                 previousReward = currentReward
                 previousAction = action
 
-                (currentState, currentReward, newSquare) = selectMove(previousAction, epsilon, currentRewards)
-                if(newSquare):
-                    interationCount += 1
+                currentState, currentReward = selectMove(previousAction)
+                if(currentState is None):
+                    if(currentReward < 0):
+                        exploreCount += 2
+                    else:
+                        exploreCount += 3
+                    moves = 0
+                    backFillReward(previousState, currentReward)
+
             else:
                 print('Not in any world.')
-                api.enter_world(world)
+                if ( exploreCount >= 10):
+                    exit()
                 
-                exploreCount += 1
-                (currentState, currentReward, newSquare) = selectMove(previousAction,1, None)
-
+                api.enter_world(world)
+                time.sleep(15)
+                
+                state = api.make_move('', world)
+                state = json.loads(state.decode())
+                stateX = int(state['newState']['x'])
+                stateY = int(state['newState']['y'])
+                reward = state['reward']
+                previousAction =  random.choice(range(0,4))
+                previousState = [stateX, stateY]
+                previousReward = reward
+                currentState, currentReward = selectMove(previousAction)
 

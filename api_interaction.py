@@ -2,8 +2,10 @@ import http.client
 import mimetypes
 from codecs import encode
 import json
+import time 
 
-
+user_id = '1071'
+api_key = '49d038fb3c2011271e31'
 def locate_me():
     #locate me
     #Example Output
@@ -11,8 +13,8 @@ def locate_me():
     conn = http.client.HTTPSConnection("www.notexponential.com")
     payload = ''
     headers = {
-        'x-api-key': '9398bf5f4533fbabb0af',
-        'userId': '1042',
+        'x-api-key': api_key,
+        'userId': user_id,
         'Content-Type': 'application/x-www-form-urlencoded',
         'Cookie': 'PHPSESSID=02be66b83f429101b2b740de970cfcc2; qa_key=pk7kcvbr5vlyiho3sgfq2vk5mk09pl2w'
     }
@@ -56,8 +58,8 @@ def enter_world(world_num):
     body = b'\r\n'.join(dataList)
     payload = body
     headers = {
-        'x-api-key': '9398bf5f4533fbabb0af',
-        'userId': '1042',
+        'x-api-key': api_key,
+        'userId': user_id,
         'Content-type': 'multipart/form-data; boundary={}'.format(boundary)
     }
     conn.request("POST", "/aip2pgaming/api/rl/gw.php", payload, headers)
@@ -105,8 +107,8 @@ def make_move(move, world_num):
     body = b'\r\n'.join(dataList)
     payload = body
     headers = {
-      'x-api-key': '9398bf5f4533fbabb0af',
-      'userId': '1042',
+      'x-api-key': api_key,
+      'userId': user_id,
       'Content-type': 'multipart/form-data; boundary={}'.format(boundary)
     }
     conn.request("POST", "/aip2pgaming/api/rl/gw.php", payload, headers)
@@ -122,8 +124,8 @@ def get_score():
     conn = http.client.HTTPSConnection("www.notexponential.com")
     payload = ''
     headers = {
-    'x-api-key': '9398bf5f4533fbabb0af',
-    'userId': '1042',
+    'x-api-key': api_key,
+    'userId': user_id,
     'Content-Type': 'application/x-www-form-urlencoded',
     'Cookie': 'PHPSESSID=02be66b83f429101b2b740de970cfcc2; qa_key=pk7kcvbr5vlyiho3sgfq2vk5mk09pl2w'
     }
@@ -140,8 +142,8 @@ def get_last_x_moves(x):
     conn = http.client.HTTPSConnection("www.notexponential.com")
     payload = ''
     headers = {
-        'x-api-key': '9398bf5f4533fbabb0af',
-        'userId': '1042',
+        'x-api-key': api_key,
+        'userId': user_id,
         'Content-Type': 'application/x-www-form-urlencoded',
         'Cookie': 'PHPSESSID=02be66b83f429101b2b740de970cfcc2; qa_key=pk7kcvbr5vlyiho3sgfq2vk5mk09pl2w'
     }
@@ -157,7 +159,6 @@ def get_last_x_moves(x):
 # x = "10"
 
 # enter_world(world_num)
-# make_move(move, world_num)
 # locate_me()
 # get_score()
 # get_last_x_moves(x)
