@@ -63,8 +63,7 @@ def enter_world(world_num):
     conn.request("POST", "/aip2pgaming/api/rl/gw.php", payload, headers)
     res = conn.getresponse()
     data = res.read()
-    print(data.decode("utf-8"))
-
+    return data
 
 #make move
 def make_move(move, world_num):
@@ -113,7 +112,8 @@ def make_move(move, world_num):
     conn.request("POST", "/aip2pgaming/api/rl/gw.php", payload, headers)
     res = conn.getresponse()
     data = res.read()
-    print(data.decode("utf-8"))
+    return data
+
 
 #get score
 def get_score():
@@ -148,11 +148,11 @@ def get_last_x_moves(x):
     conn.request("GET", "/aip2pgaming/api/rl/score.php?type=runs&teamId=1260&count=" + x, payload, headers)
     res = conn.getresponse()
     data = res.read()
-    print(data.decode("utf-8"))
+    return data
 
 
 #example usage
-# world_num = "0"
+#world_num = "2"
 # move = "N"
 # x = "10"
 
