@@ -15,7 +15,7 @@ import random
 import math
 
 
-world = '5'
+world = '10'
 api.enter_world(world)
 
 def checkUnexpectedMovement(previousState, previousAction, currentState):
@@ -39,8 +39,8 @@ def qLearningAgent(previousState, previousReward, previousAction, currentState, 
     # qTable = pickle.load(open('qTable0.pkl', 'rb'))
     
     # Set learning rate (alpha)
-    gamma = 0.5
-    alpha = 0.8
+    gamma = 0.7
+    alpha = 0.9
     
     # Terminal Condition
     if currentState is None:
@@ -89,8 +89,8 @@ def qLearningAgent(previousState, previousReward, previousAction, currentState, 
             val = np.amax(qTable[currentState[0] ][currentState[1]-1][:])
             if(val == 0):
                 choices.append(2)
-
-        return random.choice(choices)
+        if(len(choices) >=1):
+            return random.choice(choices)
         # if none go to unvisted direction
         
         choices = range(0, 4)
@@ -103,14 +103,20 @@ def qLearningAgent(previousState, previousReward, previousAction, currentState, 
                 return random.choice(newChoices)
             if( qTable[currentState[0]][currentState[1]][i] != -math.inf ):
                 validChoices.append(i)
-        return random.choice(validChoices)
+        if(r < .3):
+            return random.choice(validChoices)
 
     nextAction = np.argmax(qTable[currentState[0]][currentState[1]][:])
     return nextAction 
    
 def backFillReward(currentState, currentReward):
-    gamma = 0.9
-    alpha = 0.9
+    if currentReward > 0 :
+        gamma = 0.9
+        alpha = 0.9
+    else :
+        gamma = 0.2
+        alpha = 0.2
+
     for i in range(0 , 4):
         qTable[currentState[0]][currentState[1]][i] = currentReward
     for i in range(0, currentState[0] - 1):
@@ -166,7 +172,7 @@ if __name__ == "__main__":
         print('Checking for pickle file')
         qTable = pickle.load(open('qTable'+world+'.pkl', 'rb'))
         pickle.dump(qTable, open('qTable'+world+'.pkl', 'wb'))
-        
+
         print('Pickle file found.')
     except (OSError, IOError, EOFError) as e:
         print('No pickle file found. Creating now.')
@@ -181,6 +187,7 @@ if __name__ == "__main__":
         for item in qTable[39, :]:
             item[1] = -math.inf
         pickle.dump(qTable, open('qTable'+world+'.pkl', 'wb'))
+        
         print('File created successfully.')
     
     # Check what world we are in
@@ -216,13 +223,12 @@ if __name__ == "__main__":
         lastMove =  api.get_last_x_moves("1")
         lastMove = json.loads(lastMove.decode())
         exploreCount = 0
-        interationCount = 0.0
         moves = 0
-        while exploreCount < 10:
+        while exploreCount < 8:
             # Determine the next action
             # print('Determining next action.')
             epsilon = ( (8 - exploreCount) / 8 ) * .9
-            if moves < 1600 :
+            if moves < 1000 :
                 epsilon += .1
             action = qLearningAgent(previousState, previousReward, previousAction, currentState, currentReward, epsilon)
             moves += 1 
@@ -236,15 +242,15 @@ if __name__ == "__main__":
                 currentState, currentReward = selectMove(previousAction)
                 if(currentState is None):
                     if(currentReward < 0):
-                        exploreCount += 2
+                        exploreCount += 1
                     else:
-                        exploreCount += 3
+                        exploreCount += 2
                     moves = 0
                     backFillReward(previousState, currentReward)
 
             else:
                 print('Not in any world.')
-                if ( exploreCount >= 10):
+                if ( exploreCount >= 8):
                     exit()
                 
                 api.enter_world(world)
