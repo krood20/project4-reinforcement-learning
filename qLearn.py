@@ -15,9 +15,10 @@ import random
 import math
 
 
-world = '10'
+world = '1'
 api.enter_world(world)
 
+# checks is api move to expected square
 def checkUnexpectedMovement(previousState, previousAction, currentState):
     if previousAction == 0:
         if(previousState[1] + 1 == currentState[1] and previousState[1]!= 39):
@@ -32,6 +33,7 @@ def checkUnexpectedMovement(previousState, previousAction, currentState):
         if(previousState[0] - 1 == currentState[0] and previousState[0]!= 0):
             return False
     return True
+
 def qLearningAgent(previousState, previousReward, previousAction, currentState, currentReward, epsilon):
     
     # Percept - the agents perceptual inputs at any given instant
@@ -65,14 +67,13 @@ def qLearningAgent(previousState, previousReward, previousAction, currentState, 
     pickle.dump(qTable, open('qTable'+world+'.pkl', 'wb'))
     # print('Dump completed successfully.')
 
-    r = random.uniform(0, 1)
     
+    r = random.uniform(0, 1)
     if( r < epsilon):
-        # explore pick random more and explore instead
+        # explore instead of pick current best move
 
-        # to un visted square
+        # prioritize unvisited squares
         choices = []
-        
         if(currentState[0] != 0):
             val = np.amax(qTable[currentState[0] - 1][currentState[1]][:])
             if(val == 0):
@@ -91,8 +92,8 @@ def qLearningAgent(previousState, previousReward, previousAction, currentState, 
                 choices.append(2)
         if(len(choices) >=1):
             return random.choice(choices)
-        # if none go to unvisted direction
         
+        # if none go to unvisted direction
         choices = range(0, 4)
         validChoices =[]
         newChoices =[]
@@ -103,13 +104,16 @@ def qLearningAgent(previousState, previousReward, previousAction, currentState, 
                 return random.choice(newChoices)
             if( qTable[currentState[0]][currentState[1]][i] != -math.inf ):
                 validChoices.append(i)
-        if(r < .3):
+        # make completely random move
+        if(r < .5):
             return random.choice(validChoices)
 
+    #pick best move base on learning
     nextAction = np.argmax(qTable[currentState[0]][currentState[1]][:])
     return nextAction 
    
 def backFillReward(currentState, currentReward):
+
     if currentReward > 0 :
         gamma = 0.9
         alpha = 0.9
@@ -119,6 +123,9 @@ def backFillReward(currentState, currentReward):
 
     for i in range(0 , 4):
         qTable[currentState[0]][currentState[1]][i] = currentReward
+    # update rewards moving out from exit state going N E S W
+    # reward decays as you move out
+    # potential update update rewards radially
     for i in range(0, currentState[0] - 1):
         qTable[currentState[0]-i-1][currentState[1]][1] = (1-alpha)*qTable[currentState[0]-i-1][currentState[1]][1] + alpha*( gamma*np.max(qTable[currentState[0] - i][currentState[1]][:]))
     for i in range(currentState[0], 38):
@@ -130,9 +137,6 @@ def backFillReward(currentState, currentReward):
 
 def selectMove(previousAction):
     
-  
-     
-    #print('Moving agent.')
     if previousAction == 0:
         direction = 'North'
         nextState = api.make_move('N', world)
@@ -177,6 +181,8 @@ if __name__ == "__main__":
     except (OSError, IOError, EOFError) as e:
         print('No pickle file found. Creating now.')
         # Initialize Q-Values -> 3-dimensional array with x,y coordinates and action
+
+        # setting impossible directions at edges to infinity
         qTable = np.array(np.zeros([40,40,4]))
         for item in qTable[:,0]:
             item[2] = -math.inf
@@ -222,17 +228,24 @@ if __name__ == "__main__":
         print('Beginning Q-Learning sequence.')
         lastMove =  api.get_last_x_moves("1")
         lastMove = json.loads(lastMove.decode())
+
+        # number of time we found exit states across all runs
         exploreCount = 0
+
+        # number of move we made in current run
         moves = 0
+
         while exploreCount < 8:
-            # Determine the next action
-            # print('Determining next action.')
+
+            
+            # set epsilon value to determine chance to exploring
             epsilon = ( (8 - exploreCount) / 8 ) * .9
             if moves < 1000 :
                 epsilon += .1
+
             action = qLearningAgent(previousState, previousReward, previousAction, currentState, currentReward, epsilon)
             moves += 1 
-            print(epsilon)
+            
             if action is not None:
                 # Update the variable values
                 previousState = currentState
@@ -240,7 +253,10 @@ if __name__ == "__main__":
                 previousAction = action
 
                 currentState, currentReward = selectMove(previousAction)
+
+                # update reward values across map if exit state is found
                 if(currentState is None):
+                    #saying find a good state is better than bad
                     if(currentReward < 0):
                         exploreCount += 1
                     else:
@@ -250,9 +266,10 @@ if __name__ == "__main__":
 
             else:
                 print('Not in any world.')
+
                 if ( exploreCount >= 8):
                     exit()
-                
+                # re enter world to try again
                 api.enter_world(world)
                 time.sleep(15)
                 
