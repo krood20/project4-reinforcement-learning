@@ -14,10 +14,7 @@ import time
 import random
 import math
 
-
-world = '1'
-api.enter_world(world)
-
+'''
 # checks is api move to expected square
 def checkUnexpectedMovement(previousState, previousAction, currentState):
     if previousAction == 0:
@@ -33,6 +30,7 @@ def checkUnexpectedMovement(previousState, previousAction, currentState):
         if(previousState[0] - 1 == currentState[0] and previousState[0]!= 0):
             return False
     return True
+'''
 
 def qLearningAgent(previousState, previousReward, previousAction, currentState, currentReward, epsilon):
     
@@ -54,12 +52,7 @@ def qLearningAgent(previousState, previousReward, previousAction, currentState, 
     
     # print('Updating Q table')
     
-    # qTable[previousState[0]][previousState[1]][previousAction] = (qTable[previousState[0]][previousState[1]][previousAction]
-    #    + alpha*(currentReward + gamma*np.max(qTable[currentState[0]][currentState[1]][:]) 
-    #    - qTable[previousState[0]][previousState[1]][previousAction]))
-    
     # Q(s,a) <- (1-alpha)*Q(s,a) + alpha*(r + gamma*maxQ(s',a'))
-
     qTable[previousState[0]][previousState[1]][previousAction] = ((1-alpha)*qTable[previousState[0]][previousState[1]][previousAction]
         + alpha*(currentReward + gamma*np.max(qTable[currentState[0]][currentState[1]][:])))
     
@@ -93,7 +86,7 @@ def qLearningAgent(previousState, previousReward, previousAction, currentState, 
         if(len(choices) >=1):
             return random.choice(choices)
         
-        # if none go to unvisted direction
+        # if none go to unvisited direction
         choices = range(0, 4)
         validChoices =[]
         newChoices =[]
@@ -135,42 +128,76 @@ def backFillReward(currentState, currentReward):
     for i in range(currentState[1], 38):
         qTable[currentState[0]][i+1][0] = (1-alpha)*qTable[currentState[0]][i+1][0] + alpha*( gamma*np.max(qTable[currentState[0]][i][:]))
 
-def selectMove(previousAction):
+
+def selectMove(previousState, previousReward, previousAction, world):
     
     if previousAction == 0:
-        direction = 'North'
-        nextState = api.make_move('N', world)
+        direction = 'N'
+        nextState = api.make_move(direction, world)
     elif previousAction == 1:
-        direction = 'East'
-        nextState = api.make_move('E', world)
+        direction = 'E'
+        nextState = api.make_move(direction, world)
     elif previousAction == 2:
-        direction = 'South'
-        nextState = api.make_move('S', world)
+        direction = 'S'
+        nextState = api.make_move(direction, world)
     elif previousAction == 3:
-        direction = 'West'
-        nextState = api.make_move('W', world)
+        direction = 'W'
+        nextState = api.make_move(direction, world)
         
     print('Moved agent ' + direction + '.')
     state = json.loads(nextState.decode())
     print(state)
+    
     if state['newState'] != None:
-        #have to check for unpexted movement
         stateX = int(state['newState']['x'])
         stateY = int(state['newState']['y'])
         reward = state['reward']
-        currentState = [stateX, stateY]
+        currentState = np.array([stateX, stateY])
         currentReward = reward
+        
+        moveCheck = currentState - previousState
+        if len(np.argwhere(moveCheck == 0)) < 2:
+            changeFlag = int(np.argwhere(moveCheck != 0))
+            
+            # Check that the agent moves where we think it moves, otherwise correct the 
+            # 'previousAcion' value.This check is necessary to ensure that the correct 
+            # Q table value is being updated
+            
+            if changeFlag == 1:
+                if currentState[1] > previousState[1] and previousAction != 0:
+                    direction = 'N'
+                    previousAction = 0
+                    print('Move Correction. Agent actually moved N.')
+            
+                elif currentState[1] < previousState[1] and previousAction != 2:
+                    direction = 'S'
+                    previousAction = 2
+                    print('Move Correction. Agent actually moved S.')
+            
+            elif changeFlag == 0:
+                if currentState[0] > previousState[0] and previousAction != 1:
+                    direction = 'E'
+                    previousAction = 1
+                    print('Move Correction. Agent actually moved E.')
+            
+                elif currentState[0] < previousState[0] and previousAction != 3:
+                    direction = 'W'
+                    previousAction = 3
+                    print('Move Correction. Agent actually moved W.')
     
     else:
         print('Fell into exit State.')
-        # need to progate out
         currentState = state['newState']
         reward = state['reward']
         currentReward = reward
     
-    return currentState, currentReward 
+    return (currentState, currentReward, previousAction)
 
 if __name__ == "__main__":
+    
+    # Set the world for exploration.
+    world = '0'
+    api.enter_world(world)
     
     try:
         print('Checking for pickle file')
@@ -216,13 +243,12 @@ if __name__ == "__main__":
         previousState = [stateX, stateY]
         previousReward = reward
         
-        
         # By default lets pick a random action at first to get a history of
         # actions in this program instance.
         print('Moving agent.')
         previousAction =  random.choice(range(0,4))
-        currentState , currentReward = selectMove(previousAction)
-        
+        currentState, currentReward, previousAction = selectMove(previousState, previousReward, previousAction, world)
+        time.sleep(15)
         
         explore = True
         print('Beginning Q-Learning sequence.')
@@ -234,10 +260,8 @@ if __name__ == "__main__":
 
         # number of move we made in current run
         moves = 0
-
         while exploreCount < 8:
 
-            
             # set epsilon value to determine chance to exploring
             epsilon = ( (8 - exploreCount) / 8 ) * .9
             if moves < 1000 :
@@ -252,8 +276,9 @@ if __name__ == "__main__":
                 previousReward = currentReward
                 previousAction = action
 
-                currentState, currentReward = selectMove(previousAction)
-
+                currentState, currentReward, previousAction = selectMove(previousState, previousReward, previousAction, world)
+                time.sleep(15)
+                
                 # update reward values across map if exit state is found
                 if(currentState is None):
                     #saying find a good state is better than bad
@@ -281,5 +306,5 @@ if __name__ == "__main__":
                 previousAction =  random.choice(range(0,4))
                 previousState = [stateX, stateY]
                 previousReward = reward
-                currentState, currentReward = selectMove(previousAction)
+                currentState, currentReward, previousAction = selectMove(previousState, previousReward, previousAction, world)
 
